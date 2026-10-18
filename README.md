@@ -235,8 +235,9 @@ On a fresh install, wire the apps together in their web UIs:
 
 ### 6. Automatic updates
 
-`scripts/update.sh` upgrades OS packages and checks that the ZFS kernel module
-is built for the newest kernel, so the pool will import after a reboot. It then
+`scripts/update.sh` upgrades OS packages, installs matching kernel headers,
+and checks that the ZFS kernel module is built for the newest kernel, so the
+pool will import after a reboot. It then
 pulls new images for every stack, recreates changed containers, prunes old
 images, and reboots if the update requires it. The reboot is skipped if the ZFS
 module is missing.

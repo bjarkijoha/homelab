@@ -51,6 +51,15 @@ fi
 # import on the next boot. Verify the module exists before allowing a reboot.
 latest_kernel=$(ls /lib/modules | sort -V | tail -n1)
 zfs_ok=1
+
+# DKMS can only build against installed headers. The linux-headers-amd64
+# metapackage keeps headers in step with linux-image-amd64 on future upgrades.
+if [[ ! -d "/lib/modules/$latest_kernel/build" ]]; then
+    log "Installing kernel headers for $latest_kernel"
+    apt-get install -y -q linux-headers-amd64 "linux-headers-$latest_kernel" ||
+        log "ERROR: failed to install headers for $latest_kernel"
+fi
+
 if ! find "/lib/modules/$latest_kernel" -name 'zfs.ko*' -print -quit | grep -q .; then
     log "ZFS module missing for kernel $latest_kernel, running dkms autoinstall"
     dkms autoinstall -k "$latest_kernel"
