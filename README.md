@@ -2,7 +2,8 @@
 
 Docker Compose configuration for my self-hosted home server: a media stack with
 automated library management, a VPN-isolated download pipeline, photo backup,
-network-wide ad blocking, and secure external access through Cloudflare Tunnel.
+network-wide ad blocking, and a Cloudflare Tunnel that lets friends request
+media through Seerr.
 
 The server runs headless Debian 13 with Docker. Every service is its own
 Compose stack, secrets live in per-stack `.env` files that are never committed,
@@ -23,14 +24,14 @@ and a weekly cron job keeps the OS and all containers up to date.
 | `immich` | Immich | 2283 | Photo and video backup (with Postgres and Redis) |
 | `pihole` | Pi-hole | 80, 53 | Network-wide DNS ad blocking |
 | `homepage` | Homepage | 3000 | Dashboard for all services |
-| `cloudflared` | Cloudflare Tunnel | — | External access without open inbound ports |
+| `cloudflared` | Cloudflare Tunnel | — | Exposes Seerr to friends without opening ports |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     internet((Internet))
-    cf[Cloudflare Edge<br/>+ Access]
+    cf[Cloudflare Edge]
     vpn[(NordVPN<br/>WireGuard)]
 
     subgraph server[Home server]
@@ -56,7 +57,7 @@ flowchart LR
     end
 
     internet --> cf -->|outbound tunnel| cloudflared
-    cloudflared --> seerr & plex & immich & homepage
+    cloudflared --> seerr
     gluetun --> vpn --> internet
     seerr --> radarr & sonarr
     radarr & sonarr --> prowlarr
@@ -94,11 +95,14 @@ and Pi-hole needs it to serve DNS on port 53 for the whole network.
 
 ### External access
 
-There are no ports forwarded on the router. `cloudflared` opens an outbound
-tunnel to Cloudflare, and public hostnames are mapped to internal services in
-the Cloudflare Zero Trust dashboard. User-facing apps (Seerr, Plex, Immich) rely
-on their own authentication. Admin tools are meant to sit behind Cloudflare
-Access.
+Friends who have access to the Plex library request new movies and shows
+through Seerr, so Seerr is the one service published to the internet.
+`cloudflared` opens an outbound tunnel to Cloudflare, and a public hostname in
+the Cloudflare Zero Trust dashboard routes to Seerr on port 5055. No inbound
+port needs to be opened for it. Users sign in to Seerr with their Plex account.
+
+Everything else, including the admin tools (Radarr, Sonarr, Prowlarr,
+Transmission, Homepage, Pi-hole), is only reachable on the local network.
 
 ### Storage
 
@@ -230,8 +234,8 @@ On a fresh install, wire the apps together in their web UIs:
   `/shows`).
 - **Seerr**: sign in with Plex and connect Radarr and Sonarr.
 - **Plex**: add the libraries from `/Movies`, `/Shows` and the other mounted folders.
-- **Cloudflare**: in the tunnel's settings, add a public hostname for each service
-  you want reachable from outside.
+- **Cloudflare**: in the tunnel's settings, add a public hostname that points to
+  Seerr (`http://192.168.1.110:5055`).
 
 ### 6. Automatic updates
 
