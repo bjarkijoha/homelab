@@ -97,7 +97,9 @@ log "Pruning unused images"
 docker image prune -f
 
 # --- 4. Reboot if required -----------------------------------------------------
-if [[ -f /var/run/reboot-required ]]; then
+# Debian doesn't create /var/run/reboot-required, so also reboot when a newer
+# kernel is installed than the one running.
+if [[ -f /var/run/reboot-required || "$(uname -r)" != "$latest_kernel" ]]; then
     if [[ $REBOOT -eq 0 ]]; then
         log "Reboot required but --no-reboot was given"
     elif [[ $zfs_ok -eq 0 ]]; then
