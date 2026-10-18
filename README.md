@@ -184,7 +184,7 @@ sudo mkdir -p /opt/docker && sudo chown 1000:1000 /opt/docker
 ### 3. Clone and configure
 
 ```bash
-git clone https://github.com/prozco/homelab.git ~/docker
+git clone https://github.com/bjarkijoha/homelab.git ~/docker
 cd ~/docker
 
 # Create a .env for every stack that needs one, then fill in real values
