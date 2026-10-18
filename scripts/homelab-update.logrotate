@@ -1,0 +1,8 @@
+# Install: sudo cp scripts/homelab-update.logrotate /etc/logrotate.d/homelab-update
+/var/log/homelab-update.log {
+    monthly
+    rotate 6
+    compress
+    missingok
+    notifempty
+}

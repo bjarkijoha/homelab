@@ -1,0 +1,6 @@
+# Weekly homelab update — every Tuesday at 03:00.
+# Install: sudo cp scripts/homelab-update.cron /etc/cron.d/homelab-update
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 3 * * 2 root /home/plexy/docker/scripts/update.sh

@@ -9,7 +9,7 @@ services:
     volumes:
       - /opt/docker/radarr/config:/config
       - /home/plexy/Media/Movies:/movies
-      - /mnt/storage/movies:/movies-overflow
+      - /storage/movies:/movies-overflow
       - /home/plexy/Media/Pending:/downloads
     ports:
       - 7878:7878
