@@ -5,7 +5,7 @@ services:
     network_mode: host
     environment:
       - TZ=Atlantic/Reykjavik
-      - WEBPASSWORD=${WEBPASSWORD}
+      - FTLCONF_webserver_api_password=${PIHOLE_PASSWORD:?Set PIHOLE_PASSWORD in pihole/.env}
       - PIHOLE_DNS_=1.1.1.1;8.8.8.8
       - DNSMASQ_LISTENING=all
     volumes:

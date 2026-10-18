@@ -197,7 +197,7 @@ chmod 600 */.env
 | `gluetun` | `WIREGUARD_PRIVATE_KEY` (from your NordVPN WireGuard credentials), `TRANSMISSION_USER`, `TRANSMISSION_PASS` |
 | `cloudflared` | `TUNNEL_TOKEN` (Zero Trust → Networks → Tunnels → create tunnel) |
 | `immich` | `DB_PASSWORD` and the other database settings |
-| `pihole` | `WEBPASSWORD` |
+| `pihole` | `PIHOLE_PASSWORD` (admin password; Pi-hole won't start if it's empty) |
 
 If you are restoring an existing server, restore `/opt/docker` from backup
 **before** starting the stacks so every service comes back with its settings.
