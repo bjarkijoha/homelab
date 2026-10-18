@@ -14,8 +14,10 @@ services:
     ports:
       - "0.0.0.0:2283:2283"
     depends_on:
-      - redis
-      - database
+      redis:
+        condition: service_started
+      database:
+        condition: service_healthy
     restart: unless-stopped
 
   redis:
