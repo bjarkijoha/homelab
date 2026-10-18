@@ -1,0 +1,70 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.1.0/24
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}    # see instructions below
+      - SERVER_COUNTRIES=Iceland          # change to your country or remove for auto
+      - TZ=Atlantic/Reykjavik
+    ports:
+      # Transmission
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+      # Prowlarr
+      - 9696:9696
+      # FlareSolverr
+      - 8191:8191
+    restart: unless-stopped
+
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    network_mode: service:gluetun        # routes through gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Atlantic/Reykjavik
+      - USER=${TRANSMISSION_USER}
+      - PASS=${TRANSMISSION_PASS}
+    volumes:
+      - /opt/docker/transmission/config:/config
+      - /home/plexy/Media/Pending:/downloads
+      - /home/plexy/Media/Pending:/watch
+      - /home/plexy/Media/Skripo:/Skripo
+      - /home/plexy/Media/Teiknimyndir:/Teiknimyndir
+    depends_on:
+      - gluetun
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    network_mode: service:gluetun        # routes through gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Atlantic/Reykjavik
+    volumes:
+      - /opt/docker/prowlarr/config:/config
+    depends_on:
+      - gluetun
+    restart: unless-stopped
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: service:gluetun        # routes through gluetun
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Atlantic/Reykjavik
+    depends_on:
+      - gluetun
+    restart: unless-stopped

@@ -1,0 +1,19 @@
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host          # recommended — Plex works best with host networking
+    environment:
+      - PUID=1000               # run as your user (check with: id -u)
+      - PGID=1000               # run as your group (check with: id -g)
+      - TZ=Atlantic/Reykjavik
+      - VERSION=docker
+      - PLEX_CLAIM=             # optional: paste a claim token from plex.tv/claim
+    volumes:
+       - /opt/docker/plex/config:/config   # your existing Plex data, in-place
+       - /home/plexy/Media/Movies:/Movies         # point this at your actual media folder(s)
+       - /storage/shows:/Shows
+       - /home/plexy/Media/Skrípó:/Skrípó
+       - /home/plexy/Media/Teiknimyndir:/Teiknimyndir
+       - /home/plexy/Media/Pending:/Pending
+    restart: unless-stopped

@@ -1,0 +1,19 @@
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Atlantic/Reykjavik
+    volumes:
+      - /opt/docker/radarr/config:/config
+      - /home/plexy/Media/Movies:/movies
+      - /mnt/storage/movies:/movies-overflow
+      - /home/plexy/Media/Pending:/downloads
+    ports:
+      - 7878:7878
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    restart: unless-stopped

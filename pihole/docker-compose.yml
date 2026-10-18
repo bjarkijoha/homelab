@@ -1,0 +1,14 @@
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    network_mode: host
+    environment:
+      - TZ=Atlantic/Reykjavik
+      - WEBPASSWORD=${WEBPASSWORD}
+      - PIHOLE_DNS_=1.1.1.1;8.8.8.8
+      - DNSMASQ_LISTENING=all
+    volumes:
+      - /opt/docker/pihole/config:/etc/pihole
+      - /opt/docker/pihole/dnsmasq:/etc/dnsmasq.d
+    restart: unless-stopped

@@ -1,0 +1,15 @@
+services:
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    environment:
+      - TZ=Atlantic/Reykjavik
+      - PORT=5055
+    volumes:
+      - /opt/docker/overseerr/config:/app/config
+    network_mode: host
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    restart: unless-stopped

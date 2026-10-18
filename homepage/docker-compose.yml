@@ -1,0 +1,17 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    ports:
+      - 3000:3000
+    volumes:
+      - /opt/docker/homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/plexy/Media:/media:ro
+      - /storage:/storage:ro
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Atlantic/Reykjavik
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.110:3000
+    restart: unless-stopped
