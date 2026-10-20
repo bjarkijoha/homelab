@@ -128,7 +128,8 @@ part of this repository. Back it up separately.
 ├── scripts/
 │   ├── update.sh                   # weekly OS + container update
 │   ├── homelab-update.cron         # cron schedule (Tuesdays 03:00)
-│   └── homelab-update.logrotate    # log rotation for update.sh
+│   ├── homelab-update.logrotate    # log rotation for update.sh
+│   └── docker-zfs.conf             # systemd drop-in: Docker waits for ZFS
 └── README.md
 ```
 
@@ -165,18 +166,23 @@ sudo zfs create storage/movies
 sudo chown -R 1000:1000 /storage/shows /storage/photos /storage/movies
 ```
 
-Make Docker wait for ZFS at boot so containers never start against empty
-mount points:
+Make Docker wait for the ZFS datasets at boot so containers never start
+against empty mount points. Run this from the cloned repo (step 3), or come
+back to it after cloning:
 
 ```bash
-sudo systemctl edit docker.service
+sudo install -Dm644 scripts/docker-zfs.conf \
+    /etc/systemd/system/docker.service.d/override.conf
+sudo systemctl daemon-reload
 ```
 
-```ini
-[Unit]
-After=zfs-import.target zfs-mount.service
-Requires=zfs-import.target zfs-mount.service
-```
+The drop-in requires the actual dataset mounts (`RequiresMountsFor=`), not
+just `zfs-mount.service`. That service reports success even when the pool
+failed to import. After a power cut the HBA once failed to initialise, the
+pool didn't import, and Docker started every container against empty
+`/storage` folders on the OS SSD. With this drop-in, a missing pool keeps
+Docker down. Fix the pool (`sudo zpool import storage`), then run
+`sudo systemctl start docker`.
 
 Create the media folders on the media disk:
 
