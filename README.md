@@ -176,12 +176,16 @@ sudo install -Dm644 scripts/docker-zfs.conf \
 sudo systemctl daemon-reload
 ```
 
-The drop-in requires the actual dataset mounts (`RequiresMountsFor=`), not
-just `zfs-mount.service`. That service reports success even when the pool
-failed to import. After a power cut the HBA once failed to initialise, the
-pool didn't import, and Docker started every container against empty
-`/storage` folders on the OS SSD. With this drop-in, a missing pool keeps
-Docker down. Fix the pool (`sudo zpool import storage`), then run
+The drop-in checks that each dataset is really mounted
+(`AssertPathIsMountPoint=`) when Docker is about to start. Depending on
+`zfs-mount.service` isn't enough, because it reports success even when the
+pool failed to import. `RequiresMountsFor=` doesn't work either: ZFS mounts
+have no fstab entry, so systemd only orders after them and silently drops the
+dependency when they don't exist. After a power cut the HBA once failed to
+initialise, the pool didn't import, and Docker started every container against
+empty `/storage` folders on the OS SSD. Now a missing dataset makes Docker
+fail to start (`systemctl status docker` shows the failed assertion). Fix the
+pool (`sudo zpool import storage && sudo zfs mount -a`), then run
 `sudo systemctl start docker`.
 
 Create the media folders on the media disk:
