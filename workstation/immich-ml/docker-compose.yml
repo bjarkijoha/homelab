@@ -1,0 +1,32 @@
+# Immich machine learning, run on the desktop workstation (not on the server).
+#
+# The server's Q9450 has no AVX, so Immich ML can't run there. This container
+# does face detection/recognition and smart-search (CLIP) embeddings on the
+# workstation's Radeon RX 7700/7800 XT via ROCm. The Immich server reaches it
+# at http://<workstation-ip>:3003 (Administration > Settings > Machine Learning).
+#
+# Lives under workstation/ so scripts/update.sh on the server doesn't pick it up.
+# Keep the image version in step with immich-server: after the server updates,
+# run `docker compose pull && docker compose up -d` here too.
+
+services:
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release-rocm
+    container_name: immich-machine-learning
+    group_add:
+      - video
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    volumes:
+      - model-cache:/cache
+    environment:
+      # Keep models loaded; the default 5-minute idle unload means a reload
+      # after every pause between jobs.
+      - MACHINE_LEARNING_MODEL_TTL=0
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+volumes:
+  model-cache:

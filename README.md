@@ -22,6 +22,7 @@ and a weekly cron job keeps the OS and all containers up to date.
 | `gluetun` | Transmission | 9091 | Torrent client, routed through the VPN |
 | `gluetun` | FlareSolverr | 8191 | Cloudflare challenge solver for indexers, routed through the VPN |
 | `immich` | Immich | 2283 | Photo and video backup (with Postgres and Redis) |
+| `workstation/immich-ml` | Immich ML | 3003 | Face recognition and smart search, run on the desktop workstation's GPU |
 | `pihole` | Pi-hole | 80, 53 | Network-wide DNS ad blocking |
 | `homepage` | Homepage | 3000 | Dashboard for all services |
 | `cloudflared` | Cloudflare Tunnel | — | Exposes Seerr to friends without opening ports |
@@ -92,6 +93,17 @@ the LAN.
 
 Plex, Seerr and Pi-hole use host networking. Plex needs it for local discovery,
 and Pi-hole needs it to serve DNS on port 53 for the whole network.
+
+### Immich machine learning
+
+The server's CPU has no AVX, which Immich's machine learning needs, so face
+recognition and smart search run on the desktop workstation instead
+(`workstation/immich-ml`, ROCm on a Radeon RX 7700/7800 XT). The Immich server
+sends it thumbnails over the LAN via `IMMICH_MACHINE_LEARNING_URL`; nothing
+leaves the network. The stack sits under `workstation/` so `update.sh` on the
+server skips it. When the workstation is off, ML jobs wait: run the Face
+Detection and Smart Search jobs on "Missing" afterwards. After the server
+updates Immich, pull the ML image on the workstation too so versions match.
 
 ### External access
 

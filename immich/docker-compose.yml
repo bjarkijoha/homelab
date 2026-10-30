@@ -8,7 +8,8 @@ services:
     environment:
       - IMMICH_HOST=0.0.0.0
       - IMMICH_PORT=2283
-      - IMMICH_IGNORE_MACHINE_LEARNING=true
+      # ML runs on the workstation (see workstation/immich-ml); the server CPU lacks AVX
+      - IMMICH_MACHINE_LEARNING_URL=http://192.168.1.193:3003
     env_file:
       - .env
     ports:
