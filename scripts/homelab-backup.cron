@@ -1,0 +1,6 @@
+# Nightly backup of /opt/docker app data — every day at 04:30.
+# Install: sudo cp scripts/homelab-backup.cron /etc/cron.d/homelab-backup
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+30 4 * * * root /home/plexy/docker/scripts/backup.sh

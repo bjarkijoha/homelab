@@ -1,5 +1,5 @@
 # Install: sudo cp scripts/homelab-update.logrotate /etc/logrotate.d/homelab-update
-/var/log/homelab-update.log {
+/var/log/homelab-update.log /var/log/homelab-backup.log {
     monthly
     rotate 6
     compress

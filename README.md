@@ -140,7 +140,9 @@ part of this repository. Back it up separately.
 ├── scripts/
 │   ├── update.sh                   # weekly OS + container update
 │   ├── homelab-update.cron         # cron schedule (Tuesdays 03:00)
-│   ├── homelab-update.logrotate    # log rotation for update.sh
+│   ├── homelab-update.logrotate    # log rotation for update.sh and backup.sh
+│   ├── backup.sh                   # nightly app data backup
+│   ├── homelab-backup.cron         # cron schedule (daily 04:30)
 │   └── docker-zfs.conf             # systemd drop-in: Docker waits for ZFS
 └── README.md
 ```
@@ -226,7 +228,8 @@ chmod 600 */.env
 | `pihole` | `PIHOLE_PASSWORD` (admin password; Pi-hole won't start if it's empty) |
 
 If you are restoring an existing server, restore `/opt/docker` from backup
-**before** starting the stacks so every service comes back with its settings.
+**before** starting the stacks so every service comes back with its settings
+(see [Restoring from a backup](#restoring-from-a-backup)).
 
 ### 4. Start the stacks
 
@@ -279,3 +282,47 @@ run it by hand without rebooting:
 ```bash
 sudo ~/docker/scripts/update.sh --no-reboot
 ```
+
+### 7. Backups
+
+`scripts/backup.sh` backs up everything the apps can't rebuild on their own:
+settings and databases from `/opt/docker`, plus each stack's `.env` file.
+Caches, logs, artwork and thumbnails are skipped. Each backup is a single
+`homelab-YYYY-MM-DD.tar.zst` archive of about 400 MB in `/storage/backups`.
+
+- The Immich database is exported with `pg_dumpall`, and Pi-hole's settings with
+  its Teleporter export, so neither service stops.
+- Plex, Radarr, Sonarr, Prowlarr and Seerr keep their data in SQLite. They are
+  stopped for the minute it takes to archive them, so the databases are
+  consistent, and then started again.
+- The script keeps 7 daily backups and 4 weekly ones (from Sundays).
+- If the ZFS pool isn't mounted, it aborts rather than writing to the OS disk.
+
+```bash
+sudo zfs create storage/backups
+sudo cp scripts/homelab-backup.cron /etc/cron.d/homelab-backup
+```
+
+It runs every day at 04:30 and logs to `/var/log/homelab-backup.log`. The
+archives contain secrets, so they're readable by root only.
+
+The backups sit on the same server as the data, so they protect against the OS
+disk failing or a bad change, not against losing the whole machine. Copy them
+off the server for that.
+
+#### Restoring from a backup
+
+```bash
+cd /tmp && sudo tar --zstd -xf /storage/backups/daily/homelab-<date>.tar.zst
+
+# App data and secrets
+sudo cp -a opt/docker /opt/
+sudo cp -r env/. ~/docker/ && sudo chown -R "$USER": ~/docker
+
+# Immich database: start only the database, then load the export
+docker compose -f ~/docker/immich/docker-compose.yml up -d database
+zstd -dc immich-db.sql.zst | docker exec -i immich-postgres sh -c 'psql -U "$POSTGRES_USER" -d postgres'
+```
+
+Then start the stacks as in step 4. Import `pihole-teleporter.zip` in Pi-hole's
+web UI under **Settings → Teleporter**.
