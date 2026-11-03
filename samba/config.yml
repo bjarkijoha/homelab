@@ -22,3 +22,13 @@ share:
       # `veto: no` turns this on, so it's spelled out here instead.)
       - "veto files = /Thumbs.db/ehthumbs.db/desktop.ini/.DS_Store/._*/"
       - "delete veto files = yes"
+      # Show sanoid's ZFS snapshots (autosnap_2026-11-03_19:00:01_hourly) as
+      # Windows "Previous Versions". The image's defaults are fruit and
+      # streams_xattr; this list replaces them, so they're repeated.
+      - "vfs objects = shadow_copy2 fruit streams_xattr"
+      - "shadow:snapdir = .zfs/snapshot"
+      - "shadow:snapprefix = ^autosnap"
+      - "shadow:delimiter = _"
+      - "shadow:format = _%Y-%m-%d_%H:%M:%S"
+      - "shadow:localtime = yes"
+      - "shadow:sort = desc"

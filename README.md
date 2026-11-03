@@ -148,7 +148,8 @@ part of this repository. Back it up separately.
 │   ├── homelab-update.logrotate    # log rotation for update.sh and backup.sh
 │   ├── backup.sh                   # nightly app data backup
 │   ├── homelab-backup.cron         # cron schedule (daily 04:30)
-│   └── docker-zfs.conf             # systemd drop-in: Docker waits for ZFS
+│   ├── docker-zfs.conf             # systemd drop-in: Docker waits for ZFS
+│   └── sanoid.conf                 # ZFS snapshots of the video share
 └── README.md
 ```
 
@@ -306,6 +307,27 @@ credentials**. Or from a terminal:
 ```powershell
 net use V: \\192.168.1.110\videos /user:plexy /persistent:yes
 ```
+
+#### Snapshots
+
+Sanoid snapshots `storage/videos` every hour and keeps 24 hourly and 7 daily
+snapshots, so a deleted or overwritten file can be restored for a week:
+
+```bash
+sudo apt install sanoid
+sudo install -Dm644 scripts/sanoid.conf /etc/sanoid/sanoid.conf
+```
+
+- **Windows**: right-click the file or folder → **Properties** →
+  **Previous Versions**.
+- **Linux**: copy it back from `/storage/videos/.zfs/snapshot/<snapshot>/` on
+  the server.
+
+A snapshot only takes up space for data deleted or changed since it was
+taken. Deleting a large file frees its space only once the last snapshot that
+holds it expires, up to a week later. To free it now, destroy those snapshots
+(`zfs list -t snapshot -o name,used storage/videos` shows what each one
+holds).
 
 Record and edit locally, then move finished files to the share: over gigabit
 it tops out around 110 MB/s, and a network drop mid-recording can corrupt the
