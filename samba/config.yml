@@ -1,0 +1,24 @@
+# Users and shares for crazymax/samba. The password comes from SAMBA_PASSWORD
+# in samba/.env, passed in as a Compose secret.
+auth:
+  - user: plexy
+    group: plexy
+    uid: 1000                   # same owner as the rest of /storage
+    gid: 1000
+    password_file: /run/secrets/samba_password
+
+share:
+  - name: videos
+    path: /samba/videos
+    browsable: yes
+    readonly: no
+    guestok: no
+    validusers: plexy
+    writelist: plexy
+    options:
+      - "create mask = 0664"
+      - "directory mask = 0775"
+      # Keep OS clutter off the share. (The image's own `veto:` key is inverted:
+      # `veto: no` turns this on, so it's spelled out here instead.)
+      - "veto files = /Thumbs.db/ehthumbs.db/desktop.ini/.DS_Store/._*/"
+      - "delete veto files = yes"

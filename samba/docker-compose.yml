@@ -1,0 +1,20 @@
+services:
+  samba:
+    image: crazymax/samba:latest
+    container_name: samba
+    ports:
+      - "445:445"               # SMB over TCP; LAN only, not in the Cloudflare tunnel
+    environment:
+      - TZ=Atlantic/Reykjavik
+      - SAMBA_SERVER_STRING=Plexy
+    volumes:
+      - /opt/docker/samba/data:/data                # Samba's cache and runtime state
+      - ./config.yml:/data/config.yml:ro            # users and shares
+      - /storage/videos:/samba/videos
+    secrets:
+      - samba_password
+    restart: unless-stopped
+
+secrets:
+  samba_password:
+    environment: SAMBA_PASSWORD

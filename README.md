@@ -26,6 +26,7 @@ and a weekly cron job keeps the OS and all containers up to date.
 | `pihole` | Pi-hole | 80, 53 | Network-wide DNS ad blocking |
 | `homepage` | Homepage | 3000 | Dashboard for all services |
 | `cloudflared` | Cloudflare Tunnel | — | Exposes Seerr to friends without opening ports |
+| `samba` | Samba | 445 | Network share for the workstation's video files (Linux and Windows) |
 
 ## Architecture
 
@@ -50,6 +51,7 @@ flowchart LR
         immich[Immich]
         pihole[Pi-hole]
         homepage[Homepage]
+        samba[Samba]
     end
 
     subgraph storage[Storage]
@@ -69,6 +71,7 @@ flowchart LR
     transmission --> media
     plex --> media & zfs
     immich --> zfs
+    samba --> zfs
 ```
 
 ### Request and download flow
@@ -114,7 +117,8 @@ the Cloudflare Zero Trust dashboard routes to Seerr on port 5055. No inbound
 port needs to be opened for it. Users sign in to Seerr with their Plex account.
 
 Everything else, including the admin tools (Radarr, Sonarr, Prowlarr,
-Transmission, Homepage, Pi-hole), is only reachable on the local network.
+Transmission, Homepage, Pi-hole) and the Samba share, is only reachable on the
+local network.
 
 ### Storage
 
@@ -123,6 +127,7 @@ Transmission, Homepage, Pi-hole), is only reachable on the local network.
 | `/storage/shows` | ZFS mirror dataset | TV shows |
 | `/storage/photos` | ZFS mirror dataset | Immich library |
 | `/storage/movies` | ZFS mirror dataset | Movie overflow |
+| `/storage/videos` | ZFS mirror dataset | Workstation videos, shared over SMB |
 | `/home/plexy/Media` | Single ext4 disk | Movies, other libraries, `Pending` downloads |
 | `/opt/docker/<service>` | OS SSD | Application config and databases |
 
@@ -177,7 +182,8 @@ sudo zpool create -o ashift=12 storage mirror \
 sudo zfs create storage/shows
 sudo zfs create storage/photos
 sudo zfs create storage/movies
-sudo chown -R 1000:1000 /storage/shows /storage/photos /storage/movies
+sudo zfs create storage/videos
+sudo chown -R 1000:1000 /storage/shows /storage/photos /storage/movies /storage/videos
 ```
 
 Make Docker wait for the ZFS datasets at boot so containers never start
@@ -226,6 +232,7 @@ chmod 600 */.env
 | `cloudflared` | `TUNNEL_TOKEN` (Zero Trust → Networks → Tunnels → create tunnel) |
 | `immich` | `DB_PASSWORD` and the other database settings |
 | `pihole` | `PIHOLE_PASSWORD` (admin password; Pi-hole won't start if it's empty) |
+| `samba` | `SAMBA_PASSWORD` (password for the `plexy` share user) |
 
 If you are restoring an existing server, restore `/opt/docker` from backup
 **before** starting the stacks so every service comes back with its settings
@@ -261,6 +268,48 @@ On a fresh install, wire the apps together in their web UIs:
 - **Plex**: add the libraries from `/Movies`, `/Shows` and the other mounted folders.
 - **Cloudflare**: in the tunnel's settings, add a public hostname that points to
   Seerr (`http://192.168.1.110:5055`).
+
+### Video share
+
+The `samba` stack shares `/storage/videos` as `\\192.168.1.110\videos`, with
+the user `plexy` and `SAMBA_PASSWORD` from `samba/.env`. The workstation dual
+boots, and both installs use the same share. Files are owned by `plexy`
+(UID 1000) on the server, whichever client wrote them.
+
+**Linux** (needs `cifs-utils`). Store the credentials where only root can read
+them, then add an automount to `/etc/fstab`:
+
+```bash
+sudo install -d -m 700 /etc/samba/credentials
+printf 'username=plexy\npassword=<SAMBA_PASSWORD>\n' | sudo tee /etc/samba/credentials/plexy >/dev/null
+sudo chmod 600 /etc/samba/credentials/plexy
+sudo mkdir -p /mnt/videos
+```
+
+```
+//192.168.1.110/videos  /mnt/videos  cifs  credentials=/etc/samba/credentials/plexy,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,vers=3.1.1,_netdev,nofail,noauto,x-systemd.automount,x-systemd.mount-timeout=10  0  0
+```
+
+```bash
+sudo systemctl daemon-reload && sudo systemctl restart remote-fs.target
+```
+
+The share mounts the first time something opens `/mnt/videos`, so boot
+doesn't wait for the server, and a server that's down doesn't hang the
+desktop.
+
+**Windows**: File Explorer → This PC → **Map network drive**, folder
+`\\192.168.1.110\videos`, tick **Reconnect at sign-in** and **Connect using
+different credentials**, then sign in as `plexy` and tick **Remember my
+credentials**. Or from a terminal:
+
+```powershell
+net use V: \\192.168.1.110\videos /user:plexy /persistent:yes
+```
+
+Record and edit locally, then move finished files to the share: over gigabit
+it tops out around 110 MB/s, and a network drop mid-recording can corrupt the
+file.
 
 ### 6. Automatic updates
 
