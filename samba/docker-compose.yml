@@ -10,7 +10,14 @@ services:
     volumes:
       - /opt/docker/samba/data:/data                # Samba's cache and runtime state
       - ./config.yml:/data/config.yml:ro            # users and shares
-      - /storage/videos:/samba/videos
+      # rslave: ZFS mounts a snapshot under .zfs/snapshot on the host when it's
+      # first opened. Without propagation the container can't see that mount
+      # ("Symbolic link loop"), and Previous Versions can't open old files.
+      - type: bind
+        source: /storage/videos
+        target: /samba/videos
+        bind:
+          propagation: rslave
     secrets:
       - samba_password
     restart: unless-stopped
